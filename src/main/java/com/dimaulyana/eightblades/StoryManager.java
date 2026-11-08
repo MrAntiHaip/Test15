@@ -1055,7 +1055,7 @@ public class StoryManager extends PersistentState {
                 }
             }
             case 13 -> {
-                world.playSound(null, boss.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE, SoundCategory.HOSTILE, 1.5f, 1.6f);
+                world.playSound(null, boss.getBlockPos(), SoundEvents.BLOCK_RESPAWN_ANCHOR_DEPLETE.value(), SoundCategory.HOSTILE, 1.5f, 1.6f);
                 world.spawnParticles(ParticleTypes.ENCHANT, boss.getX(), boss.getY() + 1.2, boss.getZ(), 90, 4.5, 1.5, 4.5, 0.25);
                 for (ServerPlayerEntity p : nearbyPlayers) {
                     p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 3));
