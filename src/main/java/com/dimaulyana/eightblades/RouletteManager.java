@@ -200,7 +200,7 @@ public class RouletteManager {
                                 } else {
                                     long secLeft = (300_000L - (now - last)) / 1000L;
                                     sp.sendMessage(Text.literal("§cБесплатный кейс перезаряжается! Осталось: §e" + secLeft + " сек."), false);
-                                    sp.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.7f);
+                                    sp.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.7f);
                                 }
                             } else if (slotIndex == 26) {
                                 sp.closeHandledScreen();
@@ -239,7 +239,7 @@ public class RouletteManager {
         }
         if (found < count) {
             player.sendMessage(Text.literal("§cВам не хватает: §e" + costName + " §7(У вас: " + found + "/" + count + ")"), false);
-            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.7f);
+            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.7f);
             return false;
         }
 
@@ -379,7 +379,7 @@ public class RouletteManager {
                 spin.handler.sendContentUpdates();
 
                 float pitch = 0.8f + (spin.currentStep / 35.0f);
-                spin.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 0.85f, pitch);
+                spin.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.85f, pitch);
 
                 if (spin.currentStep >= spin.maxSteps) {
                     int winnerIndex = spin.currentStep + 4;
