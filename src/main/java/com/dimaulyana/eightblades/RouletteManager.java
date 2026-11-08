@@ -32,57 +32,101 @@ public class RouletteManager {
 
     public record DropEntry(Item item, int count, String rarityColor, String tierName, int weight) {}
 
-    private static final List<DropEntry> DROPS = new ArrayList<>();
+    public enum CaseType {
+        COBBLESTONE("Булыжниковый Кейс", "§7", Items.COBBLESTONE, 16),
+        IRON("Железный Кейс", "§9", Items.IRON_INGOT, 4),
+        GOLD("Золотой Кейс", "§6", Items.GOLD_INGOT, 4),
+        DIAMOND("Алмазный Кейс", "§b§l", Items.DIAMOND, 2),
+        FREE("Бесплатный Кейс", "§a§l", Items.AIR, 0);
 
-    static {
-        // 1. Ширпотреб (Consumer Grade, ~40% weight)
-        DROPS.add(new DropEntry(Items.DIRT, 64, "§7", "Ширпотреб", 15));
-        DROPS.add(new DropEntry(Items.COBBLESTONE, 64, "§7", "Ширпотреб", 15));
-        DROPS.add(new DropEntry(Items.STICK, 32, "§7", "Ширпотреб", 12));
-        DROPS.add(new DropEntry(Items.BONE, 16, "§7", "Ширпотреб", 12));
-        DROPS.add(new DropEntry(Items.SAND, 32, "§7", "Ширпотреб", 12));
-        DROPS.add(new DropEntry(Items.CACTUS, 16, "§7", "Ширпотреб", 10));
+        public final String displayName;
+        public final String color;
+        public final Item costItem;
+        public final int costCount;
 
-        // 2. Армейское (Mil-Spec Blue, ~30% weight)
-        DROPS.add(new DropEntry(Items.IRON_INGOT, 16, "§9", "Армейское", 14));
-        DROPS.add(new DropEntry(Items.COPPER_INGOT, 24, "§9", "Армейское", 14));
-        DROPS.add(new DropEntry(Items.GOLD_INGOT, 16, "§9", "Армейское", 12));
-        DROPS.add(new DropEntry(Items.REDSTONE, 32, "§9", "Армейское", 12));
-        DROPS.add(new DropEntry(Items.LAPIS_LAZULI, 24, "§9", "Армейское", 12));
-        DROPS.add(new DropEntry(Items.QUARTZ, 32, "§9", "Армейское", 10));
-
-        // 3. Запрещенное (Restricted Purple, ~18% weight)
-        DROPS.add(new DropEntry(Items.DIAMOND, 4, "§5", "Запрещенное", 8));
-        DROPS.add(new DropEntry(Items.ENDER_PEARL, 8, "§5", "Запрещенное", 8));
-        DROPS.add(new DropEntry(Items.OBSIDIAN, 12, "§5", "Запрещенное", 8));
-        DROPS.add(new DropEntry(Items.GOLDEN_APPLE, 2, "§5", "Запрещенное", 6));
-        DROPS.add(new DropEntry(Items.SCULK, 16, "§5", "Запрещенное", 6));
-        DROPS.add(new DropEntry(Items.AMETHYST_SHARD, 16, "§5", "Запрещенное", 6));
-
-        // 4. Засекреченное (Classified Pink, ~9% weight)
-        DROPS.add(new DropEntry(Items.DIAMOND, 12, "§d", "Засекреченное", 5));
-        DROPS.add(new DropEntry(Items.CRYING_OBSIDIAN, 12, "§d", "Засекреченное", 4));
-        DROPS.add(new DropEntry(Items.ECHO_SHARD, 2, "§d", "Засекреченное", 3));
-        DROPS.add(new DropEntry(Items.PRISMARINE_CRYSTALS, 16, "§d", "Засекреченное", 4));
-        DROPS.add(new DropEntry(Items.WITHER_SKELETON_SKULL, 1, "§d", "Засекреченное", 3));
-
-        // 5. Тайное / ЗОЛОТОЙ ДЖЕКПОТ (Covert Gold/Red, ~3% weight)
-        DROPS.add(new DropEntry(Items.DIAMOND, 24, "§6§l", "★ ТАЙНОЕ (ДЖЕКПОТ) ★", 2));
-        DROPS.add(new DropEntry(Items.NETHERITE_INGOT, 2, "§6§l", "★ ТАЙНОЕ (ДЖЕКПОТ) ★", 2));
-        DROPS.add(new DropEntry(Items.ENCHANTED_GOLDEN_APPLE, 1, "§6§l", "★ ТАЙНОЕ (ДЖЕКПОТ) ★", 1));
-        DROPS.add(new DropEntry(Items.WITHER_SKELETON_SKULL, 2, "§6§l", "★ ТАЙНОЕ (ДЖЕКПОТ) ★", 1));
+        CaseType(String displayName, String color, Item costItem, int costCount) {
+            this.displayName = displayName;
+            this.color = color;
+            this.costItem = costItem;
+            this.costCount = costCount;
+        }
     }
 
-    private static DropEntry getRandomDrop() {
+    private static final Map<CaseType, List<DropEntry>> CASE_DROPS = new HashMap<>();
+
+    static {
+        List<DropEntry> cobbleList = new ArrayList<>();
+        cobbleList.add(new DropEntry(Items.DIRT, 64, "§7", "Обычное", 25));
+        cobbleList.add(new DropEntry(Items.STICK, 64, "§7", "Обычное", 25));
+        cobbleList.add(new DropEntry(Items.CLAY_BALL, 32, "§7", "Обычное", 20));
+        cobbleList.add(new DropEntry(Items.COAL, 32, "§7", "Обычное", 20));
+        cobbleList.add(new DropEntry(Items.SAND, 64, "§a", "Необычное", 15));
+        cobbleList.add(new DropEntry(Items.CACTUS, 32, "§a", "Необычное", 15));
+        cobbleList.add(new DropEntry(Items.BONE, 32, "§a", "Необычное", 15));
+        cobbleList.add(new DropEntry(Items.STRING, 32, "§a", "Необычное", 15));
+        cobbleList.add(new DropEntry(Items.IRON_INGOT, 8, "§9", "Редкое", 12));
+        cobbleList.add(new DropEntry(Items.REDSTONE, 32, "§9", "Редкое", 10));
+        cobbleList.add(new DropEntry(Items.GOLD_INGOT, 4, "§5", "Мифическое", 6));
+        cobbleList.add(new DropEntry(Items.DIAMOND, 2, "§6§l", "★ ДЖЕКПОТ ★", 3));
+        CASE_DROPS.put(CaseType.COBBLESTONE, cobbleList);
+
+        List<DropEntry> ironList = new ArrayList<>();
+        ironList.add(new DropEntry(Items.COPPER_INGOT, 48, "§a", "Необычное", 20));
+        ironList.add(new DropEntry(Items.IRON_INGOT, 16, "§a", "Необычное", 20));
+        ironList.add(new DropEntry(Items.REDSTONE, 48, "§a", "Необычное", 18));
+        ironList.add(new DropEntry(Items.LAPIS_LAZULI, 32, "§9", "Редкое", 16));
+        ironList.add(new DropEntry(Items.QUARTZ, 48, "§9", "Редкое", 16));
+        ironList.add(new DropEntry(Items.GOLD_INGOT, 12, "§9", "Редкое", 14));
+        ironList.add(new DropEntry(Items.AMETHYST_SHARD, 16, "§5", "Мифическое", 10));
+        ironList.add(new DropEntry(Items.OBSIDIAN, 8, "§5", "Мифическое", 10));
+        ironList.add(new DropEntry(Items.ENDER_PEARL, 6, "§5", "Мифическое", 8));
+        ironList.add(new DropEntry(Items.DIAMOND, 4, "§6§l", "★ ДЖЕКПОТ ★", 5));
+        ironList.add(new DropEntry(Items.GOLDEN_APPLE, 3, "§6§l", "★ ДЖЕКПОТ ★", 4));
+        CASE_DROPS.put(CaseType.IRON, ironList);
+
+        List<DropEntry> goldList = new ArrayList<>();
+        goldList.add(new DropEntry(Items.GOLD_INGOT, 24, "§9", "Редкое", 20));
+        goldList.add(new DropEntry(Items.BLAZE_ROD, 12, "§9", "Редкое", 18));
+        goldList.add(new DropEntry(Items.OBSIDIAN, 16, "§9", "Редкое", 16));
+        goldList.add(new DropEntry(Items.ENDER_PEARL, 12, "§5", "Мифическое", 14));
+        goldList.add(new DropEntry(Items.GOLDEN_APPLE, 4, "§5", "Мифическое", 12));
+        goldList.add(new DropEntry(Items.GLOWSTONE, 32, "§5", "Мифическое", 12));
+        goldList.add(new DropEntry(Items.PRISMARINE_CRYSTALS, 16, "§5", "Мифическое", 10));
+        goldList.add(new DropEntry(Items.CRYING_OBSIDIAN, 12, "§d", "Легендарное", 8));
+        goldList.add(new DropEntry(Items.DIAMOND, 8, "§6§l", "★ ДЖЕКПОТ ★", 6));
+        goldList.add(new DropEntry(Items.NETHERITE_SCRAP, 2, "§6§l", "★ ДЖЕКПОТ ★", 4));
+        CASE_DROPS.put(CaseType.GOLD, goldList);
+
+        List<DropEntry> diamondList = new ArrayList<>();
+        diamondList.add(new DropEntry(Items.DIAMOND, 12, "§5", "Мифическое", 25));
+        diamondList.add(new DropEntry(Items.OBSIDIAN, 32, "§5", "Мифическое", 20));
+        diamondList.add(new DropEntry(Items.CRYING_OBSIDIAN, 24, "§d", "Легендарное", 16));
+        diamondList.add(new DropEntry(Items.GOLDEN_APPLE, 8, "§d", "Легендарное", 14));
+        diamondList.add(new DropEntry(Items.DIAMOND, 20, "§d", "Легендарное", 12));
+        diamondList.add(new DropEntry(Items.WITHER_SKELETON_SKULL, 1, "§d", "Легендарное", 8));
+        diamondList.add(new DropEntry(Items.ECHO_SHARD, 4, "§d", "Легендарное", 8));
+        diamondList.add(new DropEntry(Items.NETHERITE_INGOT, 1, "§6§l", "★ ТАЙНОЕ (НОЖ) ★", 6));
+        diamondList.add(new DropEntry(Items.DIAMOND, 32, "§6§l", "★ ТАЙНОЕ (НОЖ) ★", 5));
+        diamondList.add(new DropEntry(Items.NETHERITE_INGOT, 2, "§6§l", "★ ТАЙНОЕ (НОЖ) ★", 3));
+        diamondList.add(new DropEntry(Items.ENCHANTED_GOLDEN_APPLE, 1, "§6§l", "★ ТАЙНОЕ (НОЖ) ★", 2));
+        CASE_DROPS.put(CaseType.DIAMOND, diamondList);
+
+        List<DropEntry> freeList = new ArrayList<>(goldList);
+        freeList.addAll(ironList);
+        CASE_DROPS.put(CaseType.FREE, freeList);
+    }
+
+    private static DropEntry getRandomDrop(CaseType type) {
+        List<DropEntry> list = CASE_DROPS.getOrDefault(type, CASE_DROPS.get(CaseType.COBBLESTONE));
         int total = 0;
-        for (DropEntry d : DROPS) total += d.weight();
+        for (DropEntry d : list) total += d.weight();
         int roll = RNG.nextInt(total);
         int cur = 0;
-        for (DropEntry d : DROPS) {
+        for (DropEntry d : list) {
             cur += d.weight();
             if (roll < cur) return d;
         }
-        return DROPS.get(0);
+        return list.get(0);
     }
 
     private static ItemStack createDropStack(DropEntry drop) {
@@ -100,19 +144,20 @@ public class RouletteManager {
         public final ServerPlayerEntity player;
         public final SimpleInventory inv;
         public final GenericContainerScreenHandler handler;
+        public final CaseType caseType;
         public final List<ItemStack> sequence = new ArrayList<>();
         public int currentStep = 0;
         public int ticksUntilNext = 1;
-        public final int maxSteps = 30;
+        public final int maxSteps = 32;
 
-        public ActiveSpin(ServerPlayerEntity player, SimpleInventory inv, GenericContainerScreenHandler handler) {
+        public ActiveSpin(ServerPlayerEntity player, SimpleInventory inv, GenericContainerScreenHandler handler, CaseType caseType) {
             this.player = player;
             this.inv = inv;
             this.handler = handler;
+            this.caseType = caseType;
 
-            // Generate 45 items in advance so we can slide window of 9 items
-            for (int i = 0; i < 45; i++) {
-                sequence.add(createDropStack(getRandomDrop()));
+            for (int i = 0; i < 50; i++) {
+                sequence.add(createDropStack(getRandomDrop(caseType)));
             }
         }
     }
@@ -128,28 +173,36 @@ public class RouletteManager {
                         if (slotIndex >= 0 && slotIndex < 27) {
                             if (!(clickingPlayer instanceof ServerPlayerEntity sp)) return;
 
-                            if (activeSpins.containsKey(sp.getUuid())) {
-                                return; // Already spinning!
-                            }
+                            if (activeSpins.containsKey(sp.getUuid())) return;
 
-                            if (slotIndex == 19) {
-                                // Spin for 2 Emeralds or 16 Rotten Flesh or 4 Gold Ingots
-                                if (tryConsumeSpinPayment(sp)) {
-                                    startSpinAnimation(sp, inv, this);
+                            if (slotIndex == 2) {
+                                if (tryConsumeCost(sp, Items.COBBLESTONE, 16, "16 Булыжника")) {
+                                    startSpinAnimation(sp, inv, this, CaseType.COBBLESTONE);
                                 }
-                            } else if (slotIndex == 20) {
-                                // Free Spin check (every 5 minutes = 300,000 ms)
+                            } else if (slotIndex == 3) {
+                                if (tryConsumeCost(sp, Items.IRON_INGOT, 4, "4 Железных слитка")) {
+                                    startSpinAnimation(sp, inv, this, CaseType.IRON);
+                                }
+                            } else if (slotIndex == 5) {
+                                if (tryConsumeCost(sp, Items.GOLD_INGOT, 4, "4 Золотых слитка")) {
+                                    startSpinAnimation(sp, inv, this, CaseType.GOLD);
+                                }
+                            } else if (slotIndex == 6) {
+                                if (tryConsumeCost(sp, Items.DIAMOND, 2, "2 Алмаза")) {
+                                    startSpinAnimation(sp, inv, this, CaseType.DIAMOND);
+                                }
+                            } else if (slotIndex == 8) {
                                 long now = System.currentTimeMillis();
                                 long last = freeSpinCooldowns.getOrDefault(sp.getUuid(), 0L);
                                 if (now - last >= 300_000L) {
                                     freeSpinCooldowns.put(sp.getUuid(), now);
-                                    startSpinAnimation(sp, inv, this);
+                                    startSpinAnimation(sp, inv, this, CaseType.FREE);
                                 } else {
                                     long secLeft = (300_000L - (now - last)) / 1000L;
-                                    sp.sendMessage(Text.literal("§cБесплатный спин будет доступен через: §e" + secLeft + " сек.! §7(Или крутите за 2 Изумруда/16 Плоти)"), false);
-                                    sp.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.8f);
+                                    sp.sendMessage(Text.literal("§cБесплатный кейс перезаряжается! Осталось: §e" + secLeft + " сек."), false);
+                                    sp.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.7f);
                                 }
-                            } else if (slotIndex == 25) {
+                            } else if (slotIndex == 26) {
                                 sp.closeHandledScreen();
                                 StoryManager.get(sp.getServer()).openCompassMenu(sp);
                             }
@@ -174,50 +227,25 @@ public class RouletteManager {
                         activeSpins.remove(player.getUuid());
                     }
                 },
-                Text.literal("§6✦ Кейс Судьбы: CS:GO Рулетка ✦")
+                Text.literal("§8✦ §6Кейс Судьбы: CS:GO Рулетка §8✦")
         ));
     }
 
-    private static boolean tryConsumeSpinPayment(ServerPlayerEntity player) {
-        // Try pay with 2 Emeralds
-        if (hasItem(player, Items.EMERALD, 2)) {
-            consumeItem(player, Items.EMERALD, 2);
-            player.sendMessage(Text.literal("§aОплачено: 2 Изумруда за прокрутку!"), true);
-            return true;
-        }
-        // Try pay with 4 Gold Ingots
-        if (hasItem(player, Items.GOLD_INGOT, 4)) {
-            consumeItem(player, Items.GOLD_INGOT, 4);
-            player.sendMessage(Text.literal("§aОплачено: 4 Золотых слитка за прокрутку!"), true);
-            return true;
-        }
-        // Try pay with 16 Rotten Flesh
-        if (hasItem(player, Items.ROTTEN_FLESH, 16)) {
-            consumeItem(player, Items.ROTTEN_FLESH, 16);
-            player.sendMessage(Text.literal("§aОплачено: 16 Гнилой плоти за прокрутку!"), true);
-            return true;
-        }
-        player.sendMessage(Text.literal("§cДля платной прокрутки нужно: §a2 Изумруда §7ИЛИ §64 Золота §7ИЛИ §c16 Гнилой плоти!"), false);
-        player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.7f);
-        return false;
-    }
-
-    private static boolean hasItem(ServerPlayerEntity p, Item item, int count) {
+    private static boolean tryConsumeCost(ServerPlayerEntity player, Item item, int count, String costName) {
         int found = 0;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack s = p.getInventory().getStack(i);
-            if (s.isOf(item)) {
-                found += s.getCount();
-                if (found >= count) return true;
-            }
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack s = player.getInventory().getStack(i);
+            if (s.isOf(item)) found += s.getCount();
         }
-        return false;
-    }
+        if (found < count) {
+            player.sendMessage(Text.literal("§cВам не хватает: §e" + costName + " §7(У вас: " + found + "/" + count + ")"), false);
+            player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS, SoundCategory.PLAYERS, 1.0f, 0.7f);
+            return false;
+        }
 
-    private static void consumeItem(ServerPlayerEntity p, Item item, int count) {
         int rem = count;
-        for (int i = 0; i < p.getInventory().size(); i++) {
-            ItemStack s = p.getInventory().getStack(i);
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack s = player.getInventory().getStack(i);
             if (s.isOf(item)) {
                 int take = Math.min(rem, s.getCount());
                 s.decrement(take);
@@ -225,6 +253,8 @@ public class RouletteManager {
                 if (rem <= 0) break;
             }
         }
+        player.sendMessage(Text.literal("§aОплачено: " + costName + " за открытие кейса!"), true);
+        return true;
     }
 
     public static void populateBaseRouletteView(ServerPlayerEntity player, SimpleInventory inv) {
@@ -235,56 +265,91 @@ public class RouletteManager {
             inv.setStack(i, blackGlass.copy());
         }
 
-        // Top pointer (slot 4)
+        ItemStack infoBook = new ItemStack(Items.KNOWLEDGE_BOOK);
+        infoBook.setCustomName(Text.literal("§6§l★ Рулетка Судьбы CS:GO ★"));
+        setItemLore(infoBook, List.of(
+                "§7Крутите реальную ленту кейсов!",
+                "§fСтавки сверху:",
+                "§7• 16 Булыжника (База)",
+                "§9• 4 Железа (Медь, золото, редстоун)",
+                "§6• 4 Золота (Обсидиан, ифриты, яблоки)",
+                "§b• 2 Алмаза (Дроп до 32 алмазов и незерит!)",
+                "§a• Бесплатный спин каждые 5 минут!"
+        ));
+        inv.setStack(0, infoBook);
+
+        ItemStack cobbleBtn = new ItemStack(Items.COBBLESTONE, 16);
+        cobbleBtn.setCustomName(Text.literal("§7§l[1] Булыжниковый Кейс"));
+        setItemLore(cobbleBtn, List.of("§eЦена: §f16 Булыжника", "§aНажмите, чтобы крутить!"));
+        inv.setStack(2, cobbleBtn);
+
+        ItemStack ironBtn = new ItemStack(Items.IRON_INGOT, 4);
+        ironBtn.setCustomName(Text.literal("§9§l[2] Железный Кейс"));
+        setItemLore(ironBtn, List.of("§eЦена: §f4 Железных слитка", "§aНажмите, чтобы крутить!"));
+        inv.setStack(3, ironBtn);
+
         ItemStack topPointer = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-        topPointer.setCustomName(Text.literal("§c▼ ВЫИГРЫШНЫЙ СЛОТ ▼"));
+        topPointer.setCustomName(Text.literal("§c§l▼ ВЫИГРЫШНЫЙ СЛОТ ▼"));
         inv.setStack(4, topPointer);
 
-        // Bottom pointer (slot 22)
-        ItemStack bottomPointer = new ItemStack(Items.RED_STAINED_GLASS_PANE);
-        bottomPointer.setCustomName(Text.literal("§c▲ ВЫИГРЫШНЫЙ СЛОТ ▲"));
-        inv.setStack(22, bottomPointer);
+        ItemStack goldBtn = new ItemStack(Items.GOLD_INGOT, 4);
+        goldBtn.setCustomName(Text.literal("§6§l[3] Золотой Кейс"));
+        setItemLore(goldBtn, List.of("§eЦена: §f4 Золотых слитка", "§aНажмите, чтобы крутить!"));
+        inv.setStack(5, goldBtn);
 
-        // Preview row (9..17)
-        for (int i = 9; i <= 17; i++) {
-            inv.setStack(i, createDropStack(getRandomDrop()));
-        }
+        ItemStack diamondBtn = new ItemStack(Items.DIAMOND, 2);
+        diamondBtn.setCustomName(Text.literal("§b§l[4] Алмазный Кейс (CS:GO Нож)"));
+        setItemLore(diamondBtn, List.of("§eЦена: §b2 Алмаза", "§c★ КУШ: до 32 алмазов и незерит!", "§bНажмите, чтобы крутить!"));
+        inv.setStack(6, diamondBtn);
 
-        // Slot 19: Paid Spin Button
-        ItemStack spinBtn = new ItemStack(Items.EMERALD);
-        spinBtn.setCustomName(Text.literal("§a§l▶ КРУТИТЬ РУЛЕТКУ (Оплата)"));
-        setItemLore(spinBtn, List.of(
-                "§7Стоимость 1 спина на выбор:",
-                "§a• 2 Изумруда §7ИЛИ",
-                "§6• 4 Золотых слитка §7ИЛИ",
-                "§c• 16 Гнилой плоти",
-                "§eШанс выбить до 24 алмазов и незерит!"
-        ));
-        inv.setStack(19, spinBtn);
-
-        // Slot 20: Free Spin Button
         long now = System.currentTimeMillis();
         long last = freeSpinCooldowns.getOrDefault(player.getUuid(), 0L);
         long secLeft = Math.max(0, (300_000L - (now - last)) / 1000L);
 
         ItemStack freeBtn = new ItemStack(Items.NETHER_STAR);
         if (secLeft == 0) {
-            freeBtn.setCustomName(Text.literal("§6§l★ БЕСПЛАТНЫЙ СПИН [ГОТОВО]"));
-            setItemLore(freeBtn, List.of("§aНажмите, чтобы крутить бесплатно прямо сейчас!"));
+            freeBtn.setCustomName(Text.literal("§a§l★ БЕСПЛАТНЫЙ КЕЙС [ГОТОВО]"));
+            setItemLore(freeBtn, List.of("§aНажмите, чтобы крутить бесплатно!"));
         } else {
-            freeBtn.setCustomName(Text.literal("§7★ БЕСПЛАТНЫЙ СПИН [§e" + secLeft + "с§7]"));
+            freeBtn.setCustomName(Text.literal("§7★ БЕСПЛАТНЫЙ КЕЙС [§e" + secLeft + "с§7]"));
             setItemLore(freeBtn, List.of("§7Перезарядка 5 минут.", "§7Осталось: " + secLeft + " сек."));
         }
-        inv.setStack(20, freeBtn);
+        inv.setStack(8, freeBtn);
 
-        // Slot 25: Return to Menu
+        for (int i = 9; i <= 17; i++) {
+            inv.setStack(i, createDropStack(getRandomDrop(CaseType.COBBLESTONE)));
+        }
+
+        ItemStack balance = new ItemStack(Items.EMERALD);
+        balance.setCustomName(Text.literal("§a§lВаш Баланс Ресурсов:"));
+        setItemLore(balance, List.of(
+                "§7• Булыжник: §f" + countItem(player, Items.COBBLESTONE),
+                "§7• Железо: §f" + countItem(player, Items.IRON_INGOT),
+                "§7• Золото: §f" + countItem(player, Items.GOLD_INGOT),
+                "§7• Алмазы: §b" + countItem(player, Items.DIAMOND)
+        ));
+        inv.setStack(18, balance);
+
+        ItemStack bottomPointer = new ItemStack(Items.RED_STAINED_GLASS_PANE);
+        bottomPointer.setCustomName(Text.literal("§c§l▲ ВЫИГРЫШНЫЙ СЛОТ ▲"));
+        inv.setStack(22, bottomPointer);
+
         ItemStack backBtn = new ItemStack(Items.BARRIER);
-        backBtn.setCustomName(Text.literal("§c◀ Назад в Главное Меню"));
-        inv.setStack(25, backBtn);
+        backBtn.setCustomName(Text.literal("§c◀ Назад в Меню Судьбы"));
+        inv.setStack(26, backBtn);
     }
 
-    public static void startSpinAnimation(ServerPlayerEntity player, SimpleInventory inv, GenericContainerScreenHandler handler) {
-        ActiveSpin spin = new ActiveSpin(player, inv, handler);
+    private static int countItem(ServerPlayerEntity p, Item item) {
+        int c = 0;
+        for (int i = 0; i < p.getInventory().size(); i++) {
+            ItemStack s = p.getInventory().getStack(i);
+            if (s.isOf(item)) c += s.getCount();
+        }
+        return c;
+    }
+
+    public static void startSpinAnimation(ServerPlayerEntity player, SimpleInventory inv, GenericContainerScreenHandler handler, CaseType caseType) {
+        ActiveSpin spin = new ActiveSpin(player, inv, handler, caseType);
         activeSpins.put(player.getUuid(), spin);
         player.playSound(SoundEvents.BLOCK_CHEST_OPEN, SoundCategory.PLAYERS, 1.0f, 1.2f);
     }
@@ -305,7 +370,6 @@ public class RouletteManager {
             if (spin.ticksUntilNext <= 0) {
                 spin.currentStep++;
 
-                // Slide 9 visible items in slots 9..17
                 for (int slot = 9; slot <= 17; slot++) {
                     int seqIndex = spin.currentStep + (slot - 9);
                     if (seqIndex < spin.sequence.size()) {
@@ -314,16 +378,13 @@ public class RouletteManager {
                 }
                 spin.handler.sendContentUpdates();
 
-                // Authentic CS:GO clicking sound
                 float pitch = 0.8f + (spin.currentStep / 35.0f);
-                spin.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.8f, pitch);
+                spin.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING, SoundCategory.PLAYERS, 0.85f, pitch);
 
                 if (spin.currentStep >= spin.maxSteps) {
-                    // Winner is at center slot 13!
-                    int winnerIndex = spin.currentStep + 4; // slot 13 corresponds to offset 4 (9+4=13)
+                    int winnerIndex = spin.currentStep + 4;
                     ItemStack won = spin.sequence.get(winnerIndex).copy();
 
-                    // Strip lore wrapper to give real item with normal lore
                     ItemStack realPrize = new ItemStack(won.getItem(), won.getCount());
                     if (!spin.player.getInventory().insertStack(realPrize)) {
                         spin.player.dropItem(realPrize, false);
@@ -336,11 +397,11 @@ public class RouletteManager {
                     world.spawnParticles(ParticleTypes.FIREWORK, spin.player.getX(), spin.player.getY() + 1.5, spin.player.getZ(), 25, 0.4, 0.5, 0.4, 0.1);
 
                     String prizeName = won.getName().getString();
-                    StoryManager.broadcast(spin.player.getServer(), "§6[Рулетка Судьбы] §e" + spin.player.getName().getString() + " §fвыбил из Кейса: " + prizeName + "§f! ★");
+                    StoryManager.broadcast(spin.player.getServer(), "§6[Рулетка Судьбы] §e" + spin.player.getName().getString()
+                            + " §fвыбил из " + spin.caseType.color + spin.caseType.displayName + ": " + prizeName + "§f! ★");
 
                     finished.add(entry.getKey());
                 } else {
-                    // Gradual deceleration curve like CS:GO
                     spin.ticksUntilNext = Math.max(1, (int) (1 + Math.pow(spin.currentStep / 5.2, 2.2)));
                 }
             }
