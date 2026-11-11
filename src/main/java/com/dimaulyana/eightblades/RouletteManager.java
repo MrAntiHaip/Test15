@@ -148,33 +148,37 @@ public class RouletteManager {
         public final List<ItemStack> sequence = new ArrayList<>();
         public int currentStep = 0;
         public int ticksUntilNext = 1;
-        public final int maxSteps = 32;
+        // БЫЛАЯ проблема: 32 шага с формулой до 55 тиков = ~30 секунд.
+        // Теперь 28 шагов с мягким замедлением = ~3.6 секунды ВСЕЙ прокрутки.
+        public final int maxSteps = 28;
 
         public ActiveSpin(ServerPlayerEntity player, SimpleInventory inv, GenericContainerScreenHandler handler, CaseType caseType) {
             this.player = player;
             this.inv = inv;
             this.handler = handler;
             this.caseType = caseType;
-
             for (int i = 0; i < 50; i++) {
                 sequence.add(createDropStack(getRandomDrop(caseType)));
             }
+        }
+
+        // Быстрый старт (1 тик на предмет), легкое замедление только в самом конце (макс. 6 тиков)
+        public int delayForStep(int step) {
+            if (step < 16) return 1;
+            return Math.min(6, 1 + (step - 14) / 2);
         }
     }
 
     public static void openRouletteMenu(ServerPlayerEntity player) {
         SimpleInventory inv = new SimpleInventory(27);
         populateBaseRouletteView(player, inv);
-
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, playerInventory, p) ->
                 new GenericContainerScreenHandler(ScreenHandlerType.GENERIC_9X3, syncId, playerInventory, inv, 3) {
                     @Override
                     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity clickingPlayer) {
                         if (slotIndex >= 0 && slotIndex < 27) {
                             if (!(clickingPlayer instanceof ServerPlayerEntity sp)) return;
-
                             if (activeSpins.containsKey(sp.getUuid())) return;
-
                             if (slotIndex == 2) {
                                 if (tryConsumeCost(sp, Items.COBBLESTONE, 16, "16 Булыжника")) {
                                     startSpinAnimation(sp, inv, this, CaseType.COBBLESTONE);
@@ -242,7 +246,6 @@ public class RouletteManager {
             player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.7f);
             return false;
         }
-
         int rem = count;
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack s = player.getInventory().getStack(i);
@@ -260,15 +263,13 @@ public class RouletteManager {
     public static void populateBaseRouletteView(ServerPlayerEntity player, SimpleInventory inv) {
         ItemStack blackGlass = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
         blackGlass.setCustomName(Text.literal(" "));
-
         for (int i = 0; i < 27; i++) {
             inv.setStack(i, blackGlass.copy());
         }
-
         ItemStack infoBook = new ItemStack(Items.KNOWLEDGE_BOOK);
         infoBook.setCustomName(Text.literal("§6§l★ Рулетка Судьбы CS:GO ★"));
         setItemLore(infoBook, List.of(
-                "§7Крутите реальную ленту кейсов!",
+                "§7Быстрая лента: всего ~4 секунды!",
                 "§fСтавки сверху:",
                 "§7• 16 Булыжника (База)",
                 "§9• 4 Железа (Медь, золото, редстоун)",
@@ -305,7 +306,6 @@ public class RouletteManager {
         long now = System.currentTimeMillis();
         long last = freeSpinCooldowns.getOrDefault(player.getUuid(), 0L);
         long secLeft = Math.max(0, (300_000L - (now - last)) / 1000L);
-
         ItemStack freeBtn = new ItemStack(Items.NETHER_STAR);
         if (secLeft == 0) {
             freeBtn.setCustomName(Text.literal("§a§l★ БЕСПЛАТНЫЙ КЕЙС [ГОТОВО]"));
@@ -356,20 +356,16 @@ public class RouletteManager {
 
     public static void tick() {
         if (activeSpins.isEmpty()) return;
-
         List<UUID> finished = new ArrayList<>();
-
         for (Map.Entry<UUID, ActiveSpin> entry : activeSpins.entrySet()) {
             ActiveSpin spin = entry.getValue();
             if (spin.player.isDisconnected() || spin.player.currentScreenHandler != spin.handler) {
                 finished.add(entry.getKey());
                 continue;
             }
-
             spin.ticksUntilNext--;
             if (spin.ticksUntilNext <= 0) {
                 spin.currentStep++;
-
                 for (int slot = 9; slot <= 17; slot++) {
                     int seqIndex = spin.currentStep + (slot - 9);
                     if (seqIndex < spin.sequence.size()) {
@@ -377,36 +373,29 @@ public class RouletteManager {
                     }
                 }
                 spin.handler.sendContentUpdates();
-
-                float pitch = 0.8f + (spin.currentStep / 35.0f);
+                float pitch = 0.8f + (spin.currentStep / 30.0f);
                 spin.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.85f, pitch);
-
                 if (spin.currentStep >= spin.maxSteps) {
                     int winnerIndex = spin.currentStep + 4;
                     ItemStack won = spin.sequence.get(winnerIndex).copy();
-
                     ItemStack realPrize = new ItemStack(won.getItem(), won.getCount());
                     if (!spin.player.getInventory().insertStack(realPrize)) {
                         spin.player.dropItem(realPrize, false);
                     }
-
                     ServerWorld world = spin.player.getServerWorld();
                     world.playSound(null, spin.player.getBlockPos(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.PLAYERS, 1.2f, 1.0f);
                     world.playSound(null, spin.player.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.2f, 1.2f);
                     world.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, spin.player.getX(), spin.player.getY() + 1.2, spin.player.getZ(), 45, 0.5, 0.8, 0.5, 0.15);
                     world.spawnParticles(ParticleTypes.FIREWORK, spin.player.getX(), spin.player.getY() + 1.5, spin.player.getZ(), 25, 0.4, 0.5, 0.4, 0.1);
-
                     String prizeName = won.getName().getString();
                     StoryManager.broadcast(spin.player.getServer(), "§6[Рулетка Судьбы] §e" + spin.player.getName().getString()
                             + " §fвыбил из " + spin.caseType.color + spin.caseType.displayName + ": " + prizeName + "§f! ★");
-
                     finished.add(entry.getKey());
                 } else {
-                    spin.ticksUntilNext = Math.max(1, (int) (1 + Math.pow(spin.currentStep / 5.2, 2.2)));
+                    spin.ticksUntilNext = spin.delayForStep(spin.currentStep);
                 }
             }
         }
-
         for (UUID uuid : finished) {
             activeSpins.remove(uuid);
         }

@@ -15,11 +15,12 @@ public class EightBladesClient implements ClientModInitializer {
     private static int currentStage = 1;
     private static boolean swordCrafted = false;
     private static String roleDisplay = "§7Не выбрана (ПКМ Компасом)";
+    private static String identityDisplay = "§7Не выбран (ПКМ Компасом)";
     private static boolean synergyActive = false;
     private static List<String> objectiveLines = new ArrayList<>(List.of(
-            "§e1. Откройте Компас (ПКМ) и выберите Роль",
+            "§e1. Откройте Компас (ПКМ): выберите КТО ВЫ и Роль",
             "§a2. Введите команду §f/st §aдля старта сюжета",
-            "§63. В компасе доступна CS:GO рулетка и Ивенты!"
+            "§63. В компасе: CS:GO рулетка и 4 Ивента!"
     ));
 
     @Override
@@ -30,22 +31,22 @@ public class EightBladesClient implements ClientModInitializer {
             boolean crafted = buf.readBoolean();
             String role = buf.readString();
             boolean synergy = buf.readBoolean();
+            String identity = buf.readString();
             int count = buf.readInt();
             List<String> lines = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 lines.add(buf.readString());
             }
-
             client.execute(() -> {
                 storyStarted = started;
                 currentStage = stage;
                 swordCrafted = crafted;
                 roleDisplay = role;
                 synergyActive = synergy;
+                identityDisplay = identity;
                 objectiveLines = lines;
             });
         });
-
         HudRenderCallback.EVENT.register(this::renderStoryHud);
     }
 
@@ -54,22 +55,20 @@ public class EightBladesClient implements ClientModInitializer {
         if (client.player == null || client.options.hudHidden || client.options.debugEnabled) {
             return;
         }
-
         TextRenderer tr = client.textRenderer;
         int x = 8;
         int y = 8;
-
         List<String> renderLines = new ArrayList<>();
         String header = storyStarted
                 ? (currentStage <= 15 ? "§6§l⚔ Дима и Ульяна §e[Глава " + currentStage + "/15]" : "§6§l★ Сюжет Завершен [15/15]")
                 : "§6§l⚔ Дима и Ульяна §7[Ожидание /st]";
         renderLines.add(header);
+        renderLines.add("§7Я: " + identityDisplay);
         renderLines.add("§7Роль: " + roleDisplay);
-        renderLines.add("§7Резонанс Дуэта: " + (synergyActive ? "§a§lАКТИВЕН (+Сила)" : "§8Нужны 2 разные роли рядом"));
+        renderLines.add("§7Резонанс Дуэта: " + (synergyActive ? "§a§lАКТИВЕН (+Сила)" : "§8Нужны Дима и Ульяна с разными ролями рядом"));
         renderLines.add("§6Кейс & Ивенты: §eПКМ Компасом");
         renderLines.add("§8-------------------------");
         renderLines.addAll(objectiveLines);
-
         int maxWidth = 185;
         for (String line : renderLines) {
             int w = tr.getWidth(line);
@@ -77,18 +76,14 @@ public class EightBladesClient implements ClientModInitializer {
                 maxWidth = w;
             }
         }
-
         int padding = 6;
         int lineHeight = 11;
         int boxWidth = maxWidth + padding * 2;
         int boxHeight = renderLines.size() * lineHeight + padding * 2;
-
-        // Gradient frame
         context.fill(x, y, x + boxWidth, y + boxHeight, 0xB80E131F);
         context.fill(x, y, x + boxWidth, y + 2, 0xFFFFAA00);
         context.fill(x, y + boxHeight - 1, x + boxWidth, y + boxHeight, 0xFF554422);
         context.fill(x, y, x + 2, y + boxHeight, 0xFFFFAA00);
-
         int curY = y + padding;
         for (String line : renderLines) {
             context.drawTextWithShadow(tr, line, x + padding + 2, curY, 0xFFFFFF);

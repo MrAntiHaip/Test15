@@ -3,6 +3,7 @@ package com.dimaulyana.eightblades;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -17,6 +18,8 @@ import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -33,49 +36,35 @@ public class EightBladesMod implements ModInitializer {
     public static final Identifier HUD_SYNC_ID = new Identifier(MOD_ID, "hud_sync");
 
     public static final Item MUD_SWORD = registerSword("mud_sword", 1, 2, -2.4f,
-            "Грязевой Взрыв", "Отбрасывает врагов комьями тины, замедляет и оглушает.", 90);
-
+            "Грязевое Цунами", "Двойная волна тины: отбрасывает, замедляет и топит врагов в болоте.", 90);
     public static final Item CACTUS_SWORD = registerSword("cactus_sword", 2, 3, -2.3f,
-            "Веер Игл", "Выпускает кольцо острых шипов вокруг героя и включает Регенерацию.", 100);
-
+            "Кольцо Тысячи Игл", "Веер острых шипов во все стороны, шипастый щит и Регенерация II.", 100);
     public static final Item VENOM_SWORD = registerSword("venom_sword", 3, 4, -2.2f,
-            "Ядовитый Рывок", "Стремительный бросок вперед с отравлением и паутинным захватом.", 100);
-
+            "Токсичный Шторм", "Рывок сквозь врагов + ядовитое облако, травящее всё вокруг 4 секунды.", 100);
     public static final Item THUNDER_SWORD = registerSword("thunder_sword", 4, 5, -2.2f,
-            "Цепная Молния", "Поражает до 6 врагов рядом разрядами молнии.", 110);
-
+            "Цепная Молния", "Поражает до 8 врагов рядом разрядами молнии по очереди.", 110);
     public static final Item FROST_SWORD = registerSword("frost_sword", 5, 6, -2.1f,
-            "Ледяной Буран", "Замораживает область вокруг и укрывает героя Ледяным Щитом.", 110);
-
+            "Ледяной Буран", "Три кольца заморозки и Ледяной Щит для дуэта.", 110);
     public static final Item BLOOD_SWORD = registerSword("blood_sword", 6, 7, -2.1f,
-            "Кровавый Сифон", "Выкачивает здоровье из врагов вокруг, исцеляя обоих игроков.", 120);
-
+            "Кровавый Сифон", "Тотемы крови качают HP из врагов в обоих игроков 4 секунды.", 120);
     public static final Item GRAVITY_SWORD = registerSword("gravity_sword", 7, 9, -2.0f,
-            "Гравипушка: Воронка", "Стягивает всех врагов в точку, поднимает в воздух и впечатывает кинетическим ударом!", 120);
-
+            "Гравипушка: Воронка", "Стягивает врагов в точку 2.5 сек и впечатывает кинетическим ударом!", 120);
     public static final Item PHOENIX_SWORD = registerSword("phoenix_sword", 8, 10, -2.0f,
-            "Взрыв Сверхновой", "Волна огня подбрасывает врагов, дает обоим Огнестойкость и лечит на 3.5 сердца.", 120);
-
+            "Взрыв Сверхновой", "Волна огня + РЕЖИМ ФЕНИКСА на 10 сек: аура, огнестойкость, регенерация.", 120);
     public static final Item WIND_SWORD = registerSword("wind_sword", 9, 11, -1.9f,
-            "Шквальный Торнадо", "Сверхзвуковой рывок сквозь врагов, дающий дуэту Скорость II и Плавное падение.", 120);
-
+            "Шквальный Торнадо", "Сверхзвуковой рывок: торнадо подбрасывает врагов в небо, дуэту Скорость II.", 120);
     public static final Item SCULK_SWORD = registerSword("sculk_sword", 10, 13, -1.9f,
-            "Акустический Резонанс", "Звуковой луч Вардена Sonic Boom, пробивающий броню мобов и ослепляющий тьмой.", 130);
-
+            "Тройной Резонанс Вардена", "Три звуковых луча Sonic Boom подряд, пробивающих броню и ослепляющих тьмой.", 130);
     public static final Item STARFALL_SWORD = registerSword("starfall_sword", 11, 14, -1.8f,
-            "Звездный Залп", "Обрушивает град сияющих звезд, даруя обоим героям Силу II и щит.", 130);
-
+            "Звездный Метеоритный Залп", "Восемь падающих звезд с неба + Сила II и щит для дуэта.", 130);
     public static final Item HELLFORGE_SWORD = registerSword("hellforge_sword", 12, 16, -1.8f,
-            "Магматический Разлом", "Раскалывает землю лавой, плавит броню боссов и дает Сопротивление II.", 130);
-
+            "Магматический Разлом", "Раскалывает землю и выпускает расширяющееся огненное кольцо.", 130);
     public static final Item CHRONO_SWORD = registerSword("chrono_sword", 13, 18, -1.7f,
-            "Хроностазис", "Глубокая остановка времени для врагов на 7 секунд, ускоряя Диму и Ульяну вдвое!", 140);
-
+            "ХРОНОСТАЗИС", "ПОЛНАЯ остановка времени врагов на 7 секунд, затем весь урон разом!", 140);
     public static final Item ASTRAL_SWORD = registerSword("astral_sword", 14, 21, -1.6f,
-            "Черная Дыра Астрала", "Сингулярность антиматерии, засасывающая и разрывающая толпы монстров.", 140);
-
+            "Черная Дыра Астрала", "Сингулярность 3 секунды засасывает толпы монстров, затем взрыв антиматерией.", 140);
     public static final Item ECLIPSE_SWORD = registerSword("eclipse_sword", 15, 26, -1.5f,
-            "Катаклизм Затмения", "Абсолютная мощь: звуковой взрыв, молнии, полное исцеление дуэта и неуязвимость!", 150);
+            "Катаклизм Затмения", "ТРИ волны апокалипсиса: молнии, звуковые взрывы, полное исцеление и мощь богов!", 150);
 
     public static final ItemGroup EIGHT_BLADES_GROUP = Registry.register(
             Registries.ITEM_GROUP,
@@ -141,6 +130,16 @@ public class EightBladesMod implements ModInitializer {
                                 EventManager.triggerGoblinEvent(player);
                                 return 1;
                             }))
+                            .then(CommandManager.literal("comet").executes(ctx -> {
+                                ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+                                EventManager.triggerIceCometEvent(player);
+                                return 1;
+                            }))
+                            .then(CommandManager.literal("horde").executes(ctx -> {
+                                ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+                                EventManager.triggerHordeEvent(player);
+                                return 1;
+                            }))
                     )
                     .then(CommandManager.literal("npc").executes(ctx -> {
                         ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
@@ -169,9 +168,12 @@ public class EightBladesMod implements ModInitializer {
             ServerPlayerEntity player = handler.getPlayer();
             StoryManager sm = StoryManager.get(server);
             sm.giveCompassIfNeeded(player);
-            player.sendMessage(Text.literal("§6✦ [Легенда 15 Клинков: Дима и Ульяна] §fНажмите §eПКМ Компасом §fдля CS:GO Кейса, Выбора Роли и Ивентов!"), false);
+            player.sendMessage(Text.literal("§6✦ [Легенда 15 Клинков: Дима и Ульяна] §fНажмите §eПКМ Компасом §f— выберите, кто вы (Дима/Ульяна), Роль, Кейс и Ивенты!"), false);
             sm.syncHudToAll(server);
         });
+
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) ->
+                StoryManager.get(newPlayer.getServer()).giveCompassIfNeeded(newPlayer));
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
             ItemStack stack = player.getStackInHand(hand);
@@ -206,14 +208,11 @@ public class EightBladesMod implements ModInitializer {
             if (StoryManager.isBlacksmith(entity)) {
                 return ActionResult.FAIL;
             }
-
-            // Goblin hit detection
             if (!world.isClient() && entity.getCommandTags().contains(EventManager.GOBLIN_TAG) && entity instanceof ZombieEntity goblin) {
                 if (player instanceof ServerPlayerEntity sp) {
                     EventManager.onGoblinHit(sp.getServerWorld(), goblin, sp);
                 }
             }
-
             ItemStack weapon = player.getMainHandStack();
             if (StoryManager.isBannedVanillaSword(weapon.getItem())) {
                 if (!world.isClient()) {
@@ -226,7 +225,17 @@ public class EightBladesMod implements ModInitializer {
             return ActionResult.PASS;
         });
 
-        // Living entity death event for Goblin Jackpot
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof ServerPlayerEntity victim && victim.getServer() != null) {
+                if (source.getAttacker() instanceof ServerPlayerEntity attacker && attacker != victim) {
+                    if (StoryManager.get(victim.getServer()).areDuoPartners(attacker, victim)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             if (!entity.getWorld().isClient() && entity.getCommandTags().contains(EventManager.GOBLIN_TAG) && entity instanceof ZombieEntity goblin) {
                 EventManager.onGoblinKilled((ServerWorld) entity.getWorld(), goblin);
@@ -234,7 +243,37 @@ public class EightBladesMod implements ModInitializer {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            protectCompasses(server);
             StoryManager.get(server).tick(server);
         });
+    }
+
+    /** Компас Судьбы невозможно потерять: возврат с курсора + авто-выдача каждый тик. */
+    private static void protectCompasses(MinecraftServer server) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            ScreenHandler handler = player.currentScreenHandler;
+            if (handler != null) {
+                ItemStack cursor = handler.getCursorStack();
+                if (cursor.isOf(Items.COMPASS)) {
+                    ItemStack back = cursor.copy();
+                    handler.setCursorStack(ItemStack.EMPTY);
+                    if (!player.getInventory().insertStack(back)) {
+                        player.getInventory().offerOrDrop(back);
+                    }
+                    player.sendMessage(Text.literal("§6[Компас Судьбы] §cАртефакт привязан к душе — выбросить нельзя!"), true);
+                    player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), SoundCategory.PLAYERS, 1.0f, 0.7f);
+                }
+            }
+            boolean hasCompass = false;
+            for (int i = 0; i < player.getInventory().size(); i++) {
+                if (player.getInventory().getStack(i).isOf(Items.COMPASS)) {
+                    hasCompass = true;
+                    break;
+                }
+            }
+            if (!hasCompass) {
+                StoryManager.get(server).giveCompassIfNeeded(player);
+            }
+        }
     }
 }
