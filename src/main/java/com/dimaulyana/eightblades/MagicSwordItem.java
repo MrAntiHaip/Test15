@@ -251,7 +251,7 @@ public class MagicSwordItem extends SwordItem {
                 }
             }
 
-            // ===== III. ТОКСИЧНЫЙ ШТОРМ: рывок + ядовитое облако 4 сек =====
+                        // ===== III. ТОКСИЧНЫЙ ШТОРМ: рывок + ядовитое облако 4 сек =====
             case 3 -> {
                 world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_SPIDER_AMBIENT, SoundCategory.PLAYERS, 1.3f, 0.8f);
                 player.setVelocity(look.x * 1.6, 0.35, look.z * 1.6);
@@ -264,16 +264,17 @@ public class MagicSwordItem extends SwordItem {
                 }
                 Vec3d cloud = pc.add(look.multiply(4.0)).add(0, 0.6, 0);
                 for (int i = 0; i < 16; i++) {
-                    StoryManager.schedule(i * 5, () -> {
+                    final int step = i;                 // <-- копия счётчика для лямбды
+                    StoryManager.schedule(step * 5, () -> {
                         world.spawnParticles(ParticleTypes.HAPPY_VILLAGER, cloud.x, cloud.y + 0.5, cloud.z, 45, 3.2, 1.0, 3.2, 0.02);
                         world.spawnParticles(ParticleTypes.SNEEZE, cloud.x, cloud.y + 0.8, cloud.z, 10, 2.5, 0.6, 2.5, 0.02);
-                        if (i % 4 == 0) {
+                        if (step % 4 == 0) {
                             world.playSound(null, BlockPos.ofFloored(cloud), SoundEvents.ENTITY_SPIDER_HURT, SoundCategory.PLAYERS, 0.7f, 0.7f);
                         }
                         for (LivingEntity t : targets(world, cloud, 4.0, player)) {
                             t.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 100, 2));
                             t.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 80, 0));
-                            if (i % 4 == 0) hurt(world, player, t, 3.0f * dmgMult);
+                            if (step % 4 == 0) hurt(world, player, t, 3.0f * dmgMult);
                             if (mage) t.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 160, 0));
                         }
                     });
