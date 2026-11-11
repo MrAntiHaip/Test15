@@ -1,5 +1,6 @@
 package com.dimaulyana.eightblades;
-
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.world.World;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
@@ -41,7 +42,7 @@ public class EventManager {
     private static boolean hordeActive = false;
     private static int hordeWave = 0;
     private static int hordeTicksUntilWave = 0;
-    private static UUID hordeWorldId = null;
+    private static RegistryKey<World> hordeWorldKey = null;
 
     public static boolean triggerMeteorEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
@@ -131,7 +132,7 @@ public class EventManager {
         hordeActive = true;
         hordeWave = 0;
         hordeTicksUntilWave = 60;
-        hordeWorldId = caller.getWorld().getRegistryKey().getValue();
+        hordeWorldKey = caller.getWorld().getRegistryKey();
         MinecraftServer server = caller.getServer();
         StoryManager.broadcast(server, "§8==================================================");
         StoryManager.broadcast(server, "§4§l   ☠ НАШЕСТВИЕ НЕЖИТИ! ДЕРЖИТЕ ОБОРОНУ! ☠");
@@ -143,15 +144,9 @@ public class EventManager {
         return true;
     }
 
-    private static void spawnHordeWave(MinecraftServer server) {
+       private static void spawnHordeWave(MinecraftServer server) {
         hordeWave++;
-        ServerWorld world = null;
-        for (ServerWorld w : server.getWorlds()) {
-            if (w.getRegistryKey().getValue().equals(hordeWorldId)) {
-                world = w;
-                break;
-            }
-        }
+        ServerWorld world = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
         if (world == null || world.getPlayers().isEmpty()) {
             finishHorde(server, false);
             return;
@@ -177,7 +172,8 @@ public class EventManager {
             double dist = 8.0 + RNG.nextDouble() * 6.0;
             double mx = anchor.getX() + Math.cos(angle) * dist;
             double mz = anchor.getZ() + Math.sin(angle) * dist;
-            BlockPos ground = world.getTopPosition(net.minecraft.world.Heightmap.Type.WORLD_SURFACE, new BlockPos((int) mx, (int) anchor.getY(), (int) mz));
+            BlockPos ground = world.getTopPosition(net.minecraft.world.Heightmap.Type.WORLD_SURFACE,
+                    new BlockPos((int) mx, (int) anchor.getY(), (int) mz));
             mob.refreshPositionAndAngles(mx, ground.getY(), mz, 0, 0);
             mob.addCommandTag(HORDE_TAG);
             mob.setPersistent();
@@ -188,18 +184,11 @@ public class EventManager {
         }
     }
 
-    private static void finishHorde(MinecraftServer server, boolean victory) {
+        private static void finishHorde(MinecraftServer server, boolean victory) {
         hordeActive = false;
         hordeWave = 0;
-        ServerWorld world = null;
-        for (ServerWorld w : server.getWorlds()) {
-            if (w.getRegistryKey().getValue().equals(hordeWorldId)) {
-                world = w;
-                break;
-            }
-        }
+        ServerWorld world = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
         if (world == null) return;
-        // подчищаем остатки
         for (MobEntity m : world.getEntitiesByClass(MobEntity.class,
                 new net.minecraft.util.math.Box(-30000000, -64, -30000000, 30000000, 320, 30000000),
                 e -> e.getCommandTags().contains(HORDE_TAG))) {
@@ -220,7 +209,6 @@ public class EventManager {
             }
         }
     }
-
     public static boolean triggerGoblinEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
         if (now - lastGoblinTime < 480_000L) {
@@ -287,13 +275,8 @@ public class EventManager {
     public static void tick(MinecraftServer server) {
         // Тикаем нашествие
         if (hordeActive) {
-            ServerWorld hordeWorld = null;
-            for (ServerWorld w : server.getWorlds()) {
-                if (w.getRegistryKey().getValue().equals(hordeWorldId)) {
-                    hordeWorld = w;
-                    break;
-                }
-            }
+            ServerWorld hordeWorld = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
+            if (hordeWorld == null || hordeWorld.getPlayers().isEmpty()) {
             if (hordeWorld == null || hordeWorld.getPlayers().isEmpty()) {
                 hordeActive = false;
             } else {
