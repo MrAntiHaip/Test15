@@ -232,7 +232,7 @@ public class MagicSwordItem extends SwordItem {
             case 2 -> {
                 world.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 1.4f, 1.4f);
                 player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 140, 1));
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.THORNS, 300, 2));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
                 player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
                 for (int w = 0; w < 3; w++) {
                     final int wave = w;
