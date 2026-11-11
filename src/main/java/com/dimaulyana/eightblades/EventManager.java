@@ -1,6 +1,5 @@
 package com.dimaulyana.eightblades;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.world.World;
+
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.ItemEntity;
@@ -12,6 +11,7 @@ import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -19,7 +19,10 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.Heightmap;
+import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,19 +34,22 @@ import java.util.UUID;
 public class EventManager {
     public static final String GOBLIN_TAG = "eightblades_goblin";
     public static final String HORDE_TAG = "eightblades_horde";
+
     private static final Random RNG = new Random();
     private static long lastMeteorTime = 0;
     private static long lastGoblinTime = 0;
     private static long lastCometTime = 0;
     private static long lastHordeTime = 0;
+
     private static final Map<UUID, Integer> activeGoblins = new HashMap<>();
 
-    // ===== Нашествие Нежити =====
+    // Нашествие Нежити
     private static boolean hordeActive = false;
     private static int hordeWave = 0;
     private static int hordeTicksUntilWave = 0;
     private static RegistryKey<World> hordeWorldKey = null;
 
+    // ==================== МЕТЕОРИТ ====================
     public static boolean triggerMeteorEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
         if (now - lastMeteorTime < 600_000L) {
@@ -58,11 +64,13 @@ public class EventManager {
         StoryManager.broadcast(server, "§e§l   ☄ ВНИМАНИЕ: ЗВЕЗДНЫЙ МЕТЕОРИТ ПАДАЕТ С НЕБЕС! ☄");
         StoryManager.broadcast(server, "§f   Дима и Ульяна, ищите место падения в радиусе 20 блоков!");
         StoryManager.broadcast(server, "§8==================================================");
+
         Vec3d pPos = caller.getPos();
         double ox = (RNG.nextDouble() - 0.5) * 35.0;
         double oz = (RNG.nextDouble() - 0.5) * 35.0;
-        BlockPos impactPos = world.getTopPosition(net.minecraft.world.Heightmap.Type.WORLD_SURFACE,
+        BlockPos impactPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE,
                 new BlockPos((int) (pPos.x + ox), (int) pPos.y, (int) (pPos.z + oz)));
+
         world.playSound(null, impactPos, SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.AMBIENT, 2.0f, 0.8f);
         world.playSound(null, impactPos, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.AMBIENT, 2.0f, 0.7f);
         for (int y = impactPos.getY(); y < impactPos.getY() + 40; y += 2) {
@@ -70,16 +78,17 @@ public class EventManager {
             world.spawnParticles(ParticleTypes.FLASH, impactPos.getX() + 0.5, y, impactPos.getZ() + 0.5, 1, 0, 0, 0, 0);
         }
         world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, impactPos.getX() + 0.5, impactPos.getY() + 1.0, impactPos.getZ() + 0.5, 3, 0.5, 0.5, 0.5, 0);
+
         dropLootItem(world, impactPos, new ItemStack(Items.DIAMOND, 12));
         dropLootItem(world, impactPos, new ItemStack(Items.QUARTZ, 24));
-        dropLootItem(world, impactPos, new ItemStack(Items.GLOWSTONE, 16));
+        dropLootItem(world, impactPos, new ItemStack(Items.GLOWSTONE_DUST, 32));
         dropLootItem(world, impactPos, new ItemStack(Items.PRISMARINE_CRYSTALS, 12));
         dropLootItem(world, impactPos, new ItemStack(Items.GOLDEN_APPLE, 3));
         dropLootItem(world, impactPos, new ItemStack(Items.OBSIDIAN, 8));
         return true;
     }
 
-    // ===== НОВЫЙ ИВЕНТ: Ледяная Комета (даёт Плотный лёд для Главы 5!) =====
+    // ==================== ЛЕДЯНАЯ КОМЕТА ====================
     public static boolean triggerIceCometEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
         if (now - lastCometTime < 480_000L) {
@@ -94,11 +103,13 @@ public class EventManager {
         StoryManager.broadcast(server, "§b§l   ❄ С НЕБЕС ПАДАЕТ ЛЕДЯНАЯ КОМЕТА! ❄");
         StoryManager.broadcast(server, "§f   Она несет Плотный лёд и снег — всё для Клинка Мерзлоты!");
         StoryManager.broadcast(server, "§8==================================================");
+
         Vec3d pPos = caller.getPos();
         double ox = (RNG.nextDouble() - 0.5) * 30.0;
         double oz = (RNG.nextDouble() - 0.5) * 30.0;
-        BlockPos impactPos = world.getTopPosition(net.minecraft.world.Heightmap.Type.WORLD_SURFACE,
+        BlockPos impactPos = world.getTopPosition(Heightmap.Type.WORLD_SURFACE,
                 new BlockPos((int) (pPos.x + ox), (int) pPos.y, (int) (pPos.z + oz)));
+
         world.playSound(null, impactPos, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.AMBIENT, 2.0f, 0.6f);
         world.playSound(null, impactPos, SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.AMBIENT, 1.5f, 1.3f);
         for (int y = impactPos.getY(); y < impactPos.getY() + 40; y += 2) {
@@ -107,7 +118,7 @@ public class EventManager {
         }
         world.spawnParticles(ParticleTypes.SNOWFLAKE, impactPos.getX() + 0.5, impactPos.getY() + 1.0, impactPos.getZ() + 0.5, 120, 3.0, 1.5, 3.0, 0.15);
         world.spawnParticles(ParticleTypes.EXPLOSION, impactPos.getX() + 0.5, impactPos.getY() + 1.0, impactPos.getZ() + 0.5, 2, 0.5, 0.5, 0.5, 0);
-        // Плотный лёд добывается ОБЫЧНОЙ киркой — никакого шелкового касания!
+
         dropLootItem(world, impactPos, new ItemStack(Items.PACKED_ICE, 40));
         dropLootItem(world, impactPos, new ItemStack(Items.SNOWBALL, 64));
         dropLootItem(world, impactPos, new ItemStack(Items.SNOW_BLOCK, 16));
@@ -116,7 +127,7 @@ public class EventManager {
         return true;
     }
 
-    // ===== НОВЫЙ ИВЕНТ: Нашествие Нежити (3 волны + награда) =====
+    // ==================== НАШЕСТВИЕ НЕЖИТИ ====================
     public static boolean triggerHordeEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
         if (hordeActive) {
@@ -133,18 +144,20 @@ public class EventManager {
         hordeWave = 0;
         hordeTicksUntilWave = 60;
         hordeWorldKey = caller.getWorld().getRegistryKey();
+
         MinecraftServer server = caller.getServer();
         StoryManager.broadcast(server, "§8==================================================");
         StoryManager.broadcast(server, "§4§l   ☠ НАШЕСТВИЕ НЕЖИТИ! ДЕРЖИТЕ ОБОРОНУ! ☠");
         StoryManager.broadcast(server, "§f   Дима и Ульяна, вас ждут §c3 волны §fмонстров!");
         StoryManager.broadcast(server, "§f   Отбейте все — и получите сокровища Аркадия!");
         StoryManager.broadcast(server, "§8==================================================");
+
         ServerWorld world = caller.getServerWorld();
         world.playSound(null, caller.getBlockPos(), SoundEvents.ENTITY_WITHER_SPAWN, SoundCategory.HOSTILE, 1.5f, 0.7f);
         return true;
     }
 
-       private static void spawnHordeWave(MinecraftServer server) {
+    private static void spawnHordeWave(MinecraftServer server) {
         hordeWave++;
         ServerWorld world = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
         if (world == null || world.getPlayers().isEmpty()) {
@@ -152,9 +165,10 @@ public class EventManager {
             return;
         }
         ServerPlayerEntity anchor = world.getPlayers().get(RNG.nextInt(world.getPlayers().size()));
-        int count = 4 + hordeWave * 3; // 7, 10, 13
+        int count = 4 + hordeWave * 3;
         StoryManager.broadcast(server, "§4[Нашествие] §cВОЛНА " + hordeWave + "/3§f: §e" + count + " §fмонстров наступают!");
         world.playSound(null, anchor.getBlockPos(), SoundEvents.ENTITY_ZOMBIE_AMBIENT, SoundCategory.HOSTILE, 2.0f, 0.6f);
+
         for (int i = 0; i < count; i++) {
             MobEntity mob;
             int roll = RNG.nextInt(100);
@@ -168,11 +182,12 @@ public class EventManager {
                 mob = EntityType.HUSK.create(world);
             }
             if (mob == null) continue;
+
             double angle = RNG.nextDouble() * Math.PI * 2;
             double dist = 8.0 + RNG.nextDouble() * 6.0;
             double mx = anchor.getX() + Math.cos(angle) * dist;
             double mz = anchor.getZ() + Math.sin(angle) * dist;
-            BlockPos ground = world.getTopPosition(net.minecraft.world.Heightmap.Type.WORLD_SURFACE,
+            BlockPos ground = world.getTopPosition(Heightmap.Type.WORLD_SURFACE,
                     new BlockPos((int) mx, (int) anchor.getY(), (int) mz));
             mob.refreshPositionAndAngles(mx, ground.getY(), mz, 0, 0);
             mob.addCommandTag(HORDE_TAG);
@@ -184,19 +199,20 @@ public class EventManager {
         }
     }
 
-        private static void finishHorde(MinecraftServer server, boolean victory) {
+    private static void finishHorde(MinecraftServer server, boolean victory) {
         hordeActive = false;
         hordeWave = 0;
         ServerWorld world = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
         if (world == null) return;
-        for (MobEntity m : world.getEntitiesByClass(MobEntity.class,
-                new net.minecraft.util.math.Box(-30000000, -64, -30000000, 30000000, 320, 30000000),
-                e -> e.getCommandTags().contains(HORDE_TAG))) {
+
+        Box all = new Box(-30000000, -64, -30000000, 30000000, 320, 30000000);
+        for (MobEntity m : world.getEntitiesByClass(MobEntity.class, all, e -> e.getCommandTags().contains(HORDE_TAG))) {
             if (victory) {
                 world.spawnParticles(ParticleTypes.SOUL_FIRE_FLAME, m.getX(), m.getY() + 1.0, m.getZ(), 8, 0.2, 0.4, 0.2, 0.05);
             }
             m.discard();
         }
+
         if (victory) {
             StoryManager.broadcast(server, "§6§l★ НАШЕСТВИЕ ОТБИТО! Дима и Ульяна выстояли! Аркадий высыпает награду! ★");
             for (ServerPlayerEntity p : world.getPlayers()) {
@@ -209,6 +225,36 @@ public class EventManager {
             }
         }
     }
+
+    private static void tickHorde(MinecraftServer server) {
+        if (!hordeActive) return;
+        ServerWorld world = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
+        if (world == null || world.getPlayers().isEmpty()) {
+            hordeActive = false;
+            return;
+        }
+        Box all = new Box(-30000000, -64, -30000000, 30000000, 320, 30000000);
+        List<MobEntity> alive = world.getEntitiesByClass(MobEntity.class, all,
+                e -> e.getCommandTags().contains(HORDE_TAG) && e.isAlive());
+
+        if (hordeTicksUntilWave > 0) {
+            hordeTicksUntilWave--;
+            if (hordeTicksUntilWave == 0) {
+                spawnHordeWave(server);
+            }
+            return;
+        }
+        if (alive.isEmpty()) {
+            if (hordeWave >= 3) {
+                finishHorde(server, true);
+            } else {
+                hordeTicksUntilWave = 100;
+                StoryManager.broadcast(server, "§a[Нашествие] §fВолна " + hordeWave + " отбита! Следующая через 5 секунд...");
+            }
+        }
+    }
+
+    // ==================== ЖАДНЫЙ ГОБЛИН ====================
     public static boolean triggerGoblinEvent(ServerPlayerEntity caller) {
         long now = System.currentTimeMillis();
         if (now - lastGoblinTime < 480_000L) {
@@ -221,6 +267,7 @@ public class EventManager {
         ServerWorld world = caller.getServerWorld();
         ZombieEntity goblin = EntityType.ZOMBIE.create(world);
         if (goblin == null) return false;
+
         Vec3d look = caller.getRotationVec(1.0f);
         double gx = caller.getX() + look.x * 6.0;
         double gz = caller.getZ() + look.z * 6.0;
@@ -233,15 +280,21 @@ public class EventManager {
         goblin.setPersistent();
         goblin.equipStack(EquipmentSlot.HEAD, new ItemStack(Items.GOLDEN_HELMET));
         goblin.equipStack(EquipmentSlot.CHEST, new ItemStack(Items.GOLDEN_CHESTPLATE));
-        goblin.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BUNDLE));
+        goblin.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.GOLD_INGOT));
+        EntityAttributes();
         goblin.getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(70.0);
         goblin.setHealth(70.0f);
         goblin.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 999999, 1, false, false));
         world.spawnEntity(goblin);
         activeGoblins.put(goblin.getUuid(), 700);
+
         StoryManager.broadcast(server, "§6[Событие] §eРядом появился §6Жадный Гоблин-Кладоискатель§e! Бейте его — с каждого удара летят руды, а за победу ждет ДЖЕКПОТ!");
         world.playSound(null, goblin.getBlockPos(), SoundEvents.ENTITY_PIGLIN_ANGRY, SoundCategory.NEUTRAL, 1.4f, 1.3f);
         return true;
+    }
+
+    private static void EntityAttributes() {
+        // заглушка не нужна, см. примечание ниже
     }
 
     public static void onGoblinHit(ServerWorld world, ZombieEntity goblin, ServerPlayerEntity attacker) {
@@ -272,33 +325,7 @@ public class EventManager {
         dropLootItem(world, goblin.getBlockPos(), new ItemStack(Items.EMERALD, 12));
     }
 
-    public static void tick(MinecraftServer server) {
-        // Тикаем нашествие
-        if (hordeActive) {
-            ServerWorld hordeWorld = hordeWorldKey == null ? null : server.getWorld(hordeWorldKey);
-            if (hordeWorld == null || hordeWorld.getPlayers().isEmpty()) {
-            if (hordeWorld == null || hordeWorld.getPlayers().isEmpty()) {
-                hordeActive = false;
-            } else {
-                List<MobEntity> alive = hordeWorld.getEntitiesByClass(MobEntity.class,
-                        new net.minecraft.util.math.Box(-30000000, -64, -30000000, 30000000, 320, 30000000),
-                        e -> e.getCommandTags().contains(HORDE_TAG) && e.isAlive());
-                if (hordeTicksUntilWave > 0) {
-                    hordeTicksUntilWave--;
-                    if (hordeTicksUntilWave == 0) {
-                        spawnHordeWave(server);
-                    }
-                } else if (alive.isEmpty()) {
-                    if (hordeWave >= 3) {
-                        finishHorde(server, true);
-                    } else {
-                        hordeTicksUntilWave = 100; // 5 секунд передышки
-                        StoryManager.broadcast(server, "§a[Нашествие] §fВолна " + hordeWave + " отбита! Следующая через 5 секунд...");
-                    }
-                }
-            }
-        }
-
+    private static void tickGoblins(MinecraftServer server) {
         if (activeGoblins.isEmpty()) return;
         ServerWorld world = server.getOverworld();
         List<UUID> toRemove = new ArrayList<>();
@@ -322,6 +349,12 @@ public class EventManager {
         for (UUID id : toRemove) {
             activeGoblins.remove(id);
         }
+    }
+
+    // ==================== ОБЩИЙ ТИК ====================
+    public static void tick(MinecraftServer server) {
+        tickHorde(server);
+        tickGoblins(server);
     }
 
     private static void dropLootItem(ServerWorld world, BlockPos pos, ItemStack stack) {
